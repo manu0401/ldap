@@ -34,6 +34,16 @@ final class Ldap implements LdapInterface
         $this->adapter->getConnection()->bind($dn, $password);
     }
 
+    public function sasl_bind(?string $dn = null, #[\SensitiveParameter] ?string $password = null, ?string $mech = null, ?string $realm = null, ?string $authc_id = null, ?string $authz_id = null, ?string $props = null): void
+    {
+        $this->adapter->getConnection()->sasl_bind($dn, $password, $mech, $realm, $authc_id, $authz_id, $props);
+    }
+
+    public function whoami(): string|null
+    {
+        return $this->adapter->getConnection()->whoami();
+    }
+
     public function query(string $dn, string $query, array $options = []): QueryInterface
     {
         return $this->adapter->createQuery($dn, $query, $options);

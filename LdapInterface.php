@@ -33,6 +33,23 @@ interface LdapInterface
     public function bind(?string $dn = null, #[\SensitiveParameter] ?string $password = null): void;
 
     /**
+     * Return a connection bound to the ldap using SASL
+     *
+     * @return void
+     *
+     * @throws ConnectionException if dn / password could not be bound
+     */
+    public function sasl_bind(?string $dn = null, #[\SensitiveParameter] ?string $password = null, ?string $mech = null, ?string $realm = null, ?string $authc_id = null, ?string $authz_id = null, ?string $props = null);
+
+
+    /**
+     * Return authenticated and authorized (for SASL) DN
+     *
+     * @return string|null
+     */
+    public function whoami(): string|null;
+
+    /**
      * Queries a ldap server for entries matching the given criteria.
      */
     public function query(string $dn, string $query, array $options = []): QueryInterface;

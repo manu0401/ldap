@@ -86,6 +86,65 @@ class Connection extends AbstractConnection
     }
 
     /**
+     * @param string $password WARNING: When the LDAP server allows unauthenticated binds, a blank $password will always be valid
+     *
+     * @return void
+     */
+    public function sasl_bind(?string $dn = null, #[\SensitiveParameter] ?string $password = null, ?string $mech = null, ?string $realm = null, ?string $authc_id = null, ?string $authz_id = null, ?string $props = null)
+    {
+        if (!function_exists('ldap_sasl_bind')) {
+            throw new LdapException('Library - missing SASL support');
+        }
+
+        if (!$this->connection) {
+            $this->connect();
+        }
+
+        if (false === @ldap_sasl_bind($this->connection, $dn, $password, $mech, $realm, $authc_id, $authz_id, $props)) {
+            $error = ldap_error($this->connection);
+            switch (ldap_errno($this->connection)) {
+                case self::LDAP_INVALID_CREDENTIALS:
+                    throw new InvalidCredentialsException($error);
+                case self::LDAP_TIMEOUT:
+                    throw new ConnectionTimeoutException($error);
+                case self::LDAP_ALREADY_EXISTS:
+                    throw new AlreadyExistsException($error);
+            }
+            throw new ConnectionException($error);
+        }
+
+        $this->bound = true;
+    }
+
+
+    /**
+     * ldap_exop_whoami accessor, returns authenticated DN
+     *
+     * @return string
+     */
+    public function whoami() : string
+    {
+        $authz_id = ldap_exop_whoami($this->connection);
+        if ($authz_id === false) {
+            throw new LdapException('ldap_exop_whoami failed');
+        }
+	
+        $parts = explode(':', $authz_id);
+        if ($parts[0] == "dn") {
+            $dn = $parts[1];
+        } else {
+            /*
+             * We currently do not handle u:login authz_id, which 
+             * would require a configuration-dependent LDAP search
+             * to be turned into a DN
+             */
+            throw new LdapException(sprintf('Unsupported authz_id "%s"', $authz_id));
+        }
+	  
+        return $dn;
+    }
+
+    /**
      * @internal
      */
     public function getResource(): ?LDAPConnection
